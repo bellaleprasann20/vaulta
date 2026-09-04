@@ -4,10 +4,11 @@ Loads all environment variables into a single validated Settings object.
 Import `settings` anywhere in the app instead of calling os.getenv directly.
 """
 
+import json
 from functools import lru_cache
 from typing import List
 
-from pydantic import Field, AnyHttpUrl
+from pydantic import Field, AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,7 +32,22 @@ class Settings(BaseSettings):
     )
 
     # ---------- CORS ----------
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    # Changed to accept either a string or a list so Pydantic doesn't crash on startup
+    CORS_ORIGINS: str | List[str] = ["http://localhost:5173", "http://localhost:3000"]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: str | List[str]) -> List[str]:
+        if isinstance(v, str):
+            # If it looks like a JSON array, parse it safely
+            if v.startswith("["):
+                try:
+                    return json.loads(v)
+                except ValueError:
+                    return []
+            # Otherwise, treat it as a standard comma-separated string
+            return [i.strip() for i in v.split(",") if i.strip()]
+        return v
 
     # ---------- Storage (Supabase / S3) ----------
     STORAGE_PROVIDER: str = "supabase"  # "supabase" | "s3"
