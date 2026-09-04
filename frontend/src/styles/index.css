@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+
+  /* Vaulta brand palette — deep indigo/violet, evokes "vault" security + calm */
+  --color-brand-50:  #f2f0ff;
+  --color-brand-100: #e6e1ff;
+  --color-brand-200: #cfc4ff;
+  --color-brand-300: #b09dff;
+  --color-brand-400: #8f6dff;
+  --color-brand-500: #7440ff;
+  --color-brand-600: #6420f0;
+  --color-brand-700: #5417c9;
+  --color-brand-800: #4516a1;
+  --color-brand-900: #391581;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f7fb;
+  --color-surface-dark: #0f0e17;
+  --color-surface-dark-muted: #17151f;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface-muted);
+  color: #1b1a23;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Slim, unobtrusive scrollbar used throughout the app shell */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d8d6e6;
+  border-radius: 999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #c2beda;
+}

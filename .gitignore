@@ -1,0 +1,50 @@
+# ============================================================
+# Vaulta — root .gitignore (covers backend/ and frontend/)
+# ============================================================
+
+# ---------- Environment files (NEVER commit real secrets) ----------
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# ---------- Python / backend ----------
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/**/*.pyc
+backend/.pytest_cache/
+backend/*.egg-info/
+backend/build/
+backend/dist/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/*.db
+backend/*.sqlite3
+
+# ---------- Node / frontend ----------
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# ---------- Editor / OS ----------
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

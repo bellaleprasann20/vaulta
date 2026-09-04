@@ -1,0 +1,31 @@
+# ── Core framework ──────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# ── Database ─────────────────────────────────────────────────────
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+alembic==1.14.0
+
+# ── Validation / settings ───────────────────────────────────────
+pydantic==2.10.4
+pydantic-settings==2.7.0
+email-validator==2.2.0
+
+# ── Auth / security ──────────────────────────────────────────────
+# NOTE: bcrypt is used directly (not via passlib.CryptContext) — passlib's
+# bcrypt backend breaks on bcrypt>=4.1 due to a removed version-detection
+# attribute. See app/core/security.py for details.
+python-jose[cryptography]==3.3.0
+bcrypt==4.2.1
+
+# ── Storage providers (install the one you actually use) ───────
+boto3==1.35.90          # AWS S3
+supabase==2.10.0         # Supabase Storage
+
+# ── Misc ─────────────────────────────────────────────────────────
+python-multipart==0.0.20   # required by FastAPI for form/file uploads
+
+# ── Testing (dev only) ───────────────────────────────────────────
+pytest==8.3.4
+httpx==0.27.2   # capped below 0.28 — supabase-py pins httpx<0.28
