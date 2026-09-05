@@ -32,20 +32,23 @@ class Settings(BaseSettings):
     )
 
     # ---------- CORS ----------
-    # Changed to accept either a string or a list so Pydantic doesn't crash on startup
+    # Accepts either a JSON array string (["https://a.com"]) or a plain/
+    # comma-separated string (https://a.com,https://b.com) — Render's env
+    # var UI makes it easy to paste a bare URL without brackets, which
+    # would otherwise crash pydantic-settings' default JSON parsing on
+    # startup. This is more forgiving without weakening validation: it
+    # always normalizes to a real List[str] before the app uses it.
     CORS_ORIGINS: str | List[str] = ["http://localhost:5173", "http://localhost:3000"]
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, v: str | List[str]) -> List[str]:
         if isinstance(v, str):
-            # If it looks like a JSON array, parse it safely
             if v.startswith("["):
                 try:
                     return json.loads(v)
                 except ValueError:
                     return []
-            # Otherwise, treat it as a standard comma-separated string
             return [i.strip() for i in v.split(",") if i.strip()]
         return v
 
