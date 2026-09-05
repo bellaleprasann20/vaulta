@@ -1,16 +1,24 @@
 """
 Security utilities: password hashing (bcrypt) and JWT access/refresh tokens.
+
+Password hashing uses the `bcrypt` library directly rather than passlib's
+CryptContext — passlib's bcrypt backend does version detection against
+`bcrypt.__about__`, which newer bcrypt releases (>=4.1) removed. That
+missing attribute sends passlib down a buggy fallback path that crashes
+on ordinary passwords, so it's avoided entirely here.
 """
 
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import bcrypt
 from jose import jwt, JWTError
-from passlib.context import CryptContext
 
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt silently truncates at 72 bytes — reject longer input up front
+# instead of quietly hashing only a prefix of the password.
+_MAX_PASSWORD_BYTES = 72
 
 
 # ---------------------------------------------------------------------------
@@ -18,11 +26,20 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # ---------------------------------------------------------------------------
 
 def hash_password(plain_password: str) -> str:
-    return pwd_context.hash(plain_password)
+    password_bytes = plain_password.encode("utf-8")
+    if len(password_bytes) > _MAX_PASSWORD_BYTES:
+        raise ValueError(f"Password must be at most {_MAX_PASSWORD_BYTES} bytes")
+    hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    password_bytes = plain_password.encode("utf-8")[:_MAX_PASSWORD_BYTES]
+    try:
+        return bcrypt.checkpw(password_bytes, hashed_password.encode("utf-8"))
+    except ValueError:
+        # Malformed hash (e.g. corrupted data) — treat as a failed verification, not a crash.
+        return False
 
 
 # ---------------------------------------------------------------------------
