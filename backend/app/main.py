@@ -4,60 +4,37 @@ Wires together middleware, exception handlers, and versioned routers.
 Run locally with: uvicorn app.main:app --reload
 """
 
+import logging
+import traceback
+
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
 
 from app.core.config import settings
 from app.core.database import Base, engine
 
-# NOTE: these route modules will be added as we build each feature.
-# Import guards keep the app bootable even before every router exists.
-try:
-    from app.routes import auth as auth_routes
-except ImportError:
-    auth_routes = None
+logger = logging.getLogger("uvicorn.error")
 
-try:
-    from app.routes import users as users_routes
-except ImportError:
-    users_routes = None
-
-try:
-    from app.routes import files as files_routes
-except ImportError:
-    files_routes = None
-
-try:
-    from app.routes import folders as folders_routes
-except ImportError:
-    folders_routes = None
-
-try:
-    from app.routes import shares as shares_routes
-except ImportError:
-    shares_routes = None
-
-try:
-    from app.routes import public_links as public_links_routes
-except ImportError:
-    public_links_routes = None
-
-try:
-    from app.routes import search as search_routes
-except ImportError:
-    search_routes = None
-
-try:
-    from app.routes import stars as stars_routes
-except ImportError:
-    stars_routes = None
-
-try:
-    from app.routes import trash as trash_routes
-except ImportError:
-    trash_routes = None
+# Each router is imported directly — no more silent try/except ImportError.
+# That pattern made sense early on when routers didn't exist yet, but now
+# that the app is fully built, swallowing ImportError silently means a
+# real bug (a missing dependency, a typo, anything) makes routes vanish
+# with zero explanation, which is exactly what happened in production:
+# every router failed to register and the only clue was a blanket 404.
+# If any of these imports fail now, the app crashes loudly on startup
+# with a full traceback in the deploy log instead of silently degrading.
+from app.routes import auth as auth_routes
+from app.routes import users as users_routes
+from app.routes import files as files_routes
+from app.routes import folders as folders_routes
+from app.routes import shares as shares_routes
+from app.routes import public_links as public_links_routes
+from app.routes import search as search_routes
+from app.routes import stars as stars_routes
+from app.routes import trash as trash_routes
 
 
 def create_app() -> FastAPI:
@@ -84,11 +61,19 @@ def create_app() -> FastAPI:
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={"success": False, "message": "Validation error", "errors": exc.errors()},
+            content={
+                "success": False,
+                "message": "Validation error",
+                "errors": jsonable_encoder(exc.errors()),
+            },
         )
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
+        # Log the full traceback server-side so Render's logs show the
+        # real cause of any 500 — the JSON response to the client stays
+        # generic on purpose (no stack traces leaking to end users).
+        logger.error("Unhandled exception on %s %s:\n%s", request.method, request.url, traceback.format_exc())
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"success": False, "message": "Internal server error"},
@@ -96,26 +81,17 @@ def create_app() -> FastAPI:
 
     # ---------------- Routers ----------------
     prefix = settings.API_V1_PREFIX
-    if auth_routes:
-        app.include_router(auth_routes.router, prefix=f"{prefix}/auth", tags=["Auth"])
-    if users_routes:
-        app.include_router(users_routes.router, prefix=f"{prefix}/users", tags=["Users"])
-    if files_routes:
-        app.include_router(files_routes.router, prefix=f"{prefix}/files", tags=["Files"])
-    if folders_routes:
-        app.include_router(folders_routes.router, prefix=f"{prefix}/folders", tags=["Folders"])
-    if shares_routes:
-        app.include_router(shares_routes.router, prefix=f"{prefix}/shares", tags=["Shares"])
-    if public_links_routes:
-        app.include_router(
-            public_links_routes.router, prefix=f"{prefix}/public-links", tags=["Public Links"]
-        )
-    if search_routes:
-        app.include_router(search_routes.router, prefix=f"{prefix}/search", tags=["Search"])
-    if stars_routes:
-        app.include_router(stars_routes.router, prefix=f"{prefix}/stars", tags=["Stars"])
-    if trash_routes:
-        app.include_router(trash_routes.router, prefix=f"{prefix}/trash", tags=["Trash"])
+    app.include_router(auth_routes.router, prefix=f"{prefix}/auth", tags=["Auth"])
+    app.include_router(users_routes.router, prefix=f"{prefix}/users", tags=["Users"])
+    app.include_router(files_routes.router, prefix=f"{prefix}/files", tags=["Files"])
+    app.include_router(folders_routes.router, prefix=f"{prefix}/folders", tags=["Folders"])
+    app.include_router(shares_routes.router, prefix=f"{prefix}/shares", tags=["Shares"])
+    app.include_router(
+        public_links_routes.router, prefix=f"{prefix}/public-links", tags=["Public Links"]
+    )
+    app.include_router(search_routes.router, prefix=f"{prefix}/search", tags=["Search"])
+    app.include_router(stars_routes.router, prefix=f"{prefix}/stars", tags=["Stars"])
+    app.include_router(trash_routes.router, prefix=f"{prefix}/trash", tags=["Trash"])
 
     @app.get("/", tags=["Health"])
     def root():
