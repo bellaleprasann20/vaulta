@@ -18,8 +18,102 @@ A cloud-based media file storage and sharing service — a Google Drive-style ap
 
 ```
 vaulta/
-├── backend/     # FastAPI API — see backend/README.md for setup
-└── frontend/    # React + Vite SPA
+├── backend/
+│   ├── app/
+│   │   ├── main.py                  # FastAPI entrypoint
+│   │   ├── core/
+│   │   │   ├── config.py            # env settings (Pydantic)
+│   │   │   ├── database.py          # DB engine/session
+│   │   │   ├── security.py          # JWT + bcrypt hashing
+│   │   │   └── dependencies.py      # get_current_user, role checks
+│   │   ├── models/                  # SQLAlchemy ORM models
+│   │   │   ├── user.py
+│   │   │   ├── folder.py
+│   │   │   ├── file.py
+│   │   │   ├── file_version.py
+│   │   │   ├── share.py
+│   │   │   ├── link_share.py
+│   │   │   ├── star.py
+│   │   │   └── activity.py
+│   │   ├── schemas/                 # Pydantic request/response models
+│   │   │   ├── auth.py
+│   │   │   ├── user.py
+│   │   │   ├── folder.py
+│   │   │   ├── file.py
+│   │   │   ├── share.py
+│   │   │   └── link_share.py
+│   │   ├── routes/                  # API endpoints, one router per resource
+│   │   │   ├── auth.py
+│   │   │   ├── users.py
+│   │   │   ├── files.py
+│   │   │   ├── folders.py
+│   │   │   ├── shares.py
+│   │   │   ├── public_links.py
+│   │   │   ├── search.py
+│   │   │   ├── stars.py
+│   │   │   └── trash.py
+│   │   ├── services/                # business logic layer
+│   │   │   ├── auth_service.py
+│   │   │   ├── file_service.py
+│   │   │   ├── folder_service.py
+│   │   │   ├── storage_service.py   # Supabase/S3 signed URLs
+│   │   │   ├── sharing_service.py
+│   │   │   ├── search_service.py
+│   │   │   ├── star_service.py
+│   │   │   └── activity_service.py
+│   │   └── utils/
+│   │       ├── validators.py
+│   │       ├── permissions.py
+│   │       ├── file_helpers.py
+│   │       └── response.py
+│   ├── migrations/                  # Alembic migrations
+│   │   └── versions/
+│   ├── tests/                       # pytest suite (55 tests)
+│   │   ├── conftest.py
+│   │   ├── test_auth.py
+│   │   ├── test_files.py
+│   │   ├── test_folders.py
+│   │   ├── test_sharing.py
+│   │   └── test_search.py
+│   ├── alembic.ini
+│   ├── requirements.txt
+│   ├── runtime.txt                  # pins Python version for Render
+│   ├── .env.example
+│   └── README.md
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── layout/              # Navbar, Sidebar, Breadcrumbs, AppShell
+│   │   │   ├── files/                # FileCard, FileGrid, FileList, FilePreview, UploadDropzone, UploadProgress
+│   │   │   ├── folders/              # FolderCard, CreateFolderModal
+│   │   │   ├── sharing/              # ShareModal
+│   │   │   └── common/               # Loading, ProtectedRoute, ItemMenu
+│   │   ├── pages/                   # Login, Register, Dashboard, MyDrive,
+│   │   │   │                         # Shared, Starred, Trash, Search,
+│   │   │   │                         # PublicShare, NotFound
+│   │   ├── services/                # Axios API layer (one file per resource)
+│   │   ├── hooks/                   # React Query hooks (useAuth, useFiles,
+│   │   │   │                         # useFolders, useUpload, useSearch)
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx
+│   │   ├── utils/                   # formatFileSize, formatDate, fileTypes
+│   │   ├── styles/
+│   │   │   └── index.css            # Tailwind v4 + brand theme
+│   │   ├── App.jsx                  # routes
+│   │   └── main.jsx                 # QueryClientProvider root
+│   ├── .env.example
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── vercel.json                  # SPA rewrite for client-side routing
+│   └── README.md
+│
+├── docs/
+│   └── screenshots/
+│
+├── .gitignore
+├── README.md
+└── LICENSE
 ```
 
 ## Quick start
